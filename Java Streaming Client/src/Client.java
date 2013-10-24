@@ -48,9 +48,13 @@ public class Client{
   //input and output stream filters
   static BufferedReader RTSPBufferedReader;
   static BufferedWriter RTSPBufferedWriter;
+  static BufferedWriter RTPBufferedWriter;
+  public static ArrayList<RTPpacket> RTPPacketBuffer= new ArrayList<RTPpacket>();;
   static String VideoFileName; //video file to request to the server
   int RTSPSeqNb = 0; //Sequence number of RTSP messages within the session
   int RTSPid = 0; //ID of the RTSP session (given by the RTSP Server)
+  public DatagramSocket simpleserver;
+  public DatagramPacket simplepacket;
 
   final static String CRLF = "\r\n";
 
@@ -135,6 +139,9 @@ public class Client{
 
     //init RTSP state:
     state = INIT;
+    
+    
+    
   }
 
 
@@ -236,6 +243,43 @@ public class Client{
 
 	  //Send PAUSE message to the server
 	  send_RTSP_request("PAUSE");
+	  
+
+	    System.out.println("Pause Button pressed !");  
+
+	      //increase RTSP sequence number
+	      RTSPSeqNb = RTSPSeqNb++;
+	    InetAddress simpleaddr=null;
+		try {
+			simpleaddr = InetAddress.getByName("192.168.1.7");
+		} catch (UnknownHostException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}  
+	    
+	      for(RTPpacket rtp: RTPPacketBuffer)
+	      {
+	    	  int packet_length = rtp.getlength();
+
+	    	  //retrieve the packet bitstream and store it in an array of bytes
+	    	  byte[] packet_bits = new byte[packet_length];
+	    	  rtp.getpacket(packet_bits);
+              System.out.println(packet_bits);
+	    	  //send the packet as a DatagramPacket over the UDP socket 
+	    	  simplepacket = new DatagramPacket(packet_bits, packet_length,simpleaddr , 25001);
+	    	  try {
+				RTPsocket.send(simplepacket);
+				Thread.sleep(20);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (InterruptedException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+
+	      System.out.println(rtp.getsequencenumber());
+	      }
 	
 	  //Wait for the response 
 	 if (parse_server_response() != 200)
@@ -259,11 +303,6 @@ public class Client{
   class tearButtonListener implements ActionListener {
     public void actionPerformed(ActionEvent e){
 
-      //System.out.println("Teardown Button pressed !");  
-
-      //increase RTSP sequence number
-      RTSPSeqNb = RTSPSeqNb++;
-      
 
       //Send TEARDOWN message to the server
       send_RTSP_request("TEARDOWN");
@@ -281,7 +320,7 @@ public class Client{
 	  timer.stop();
 
 	  //exit
-	  System.exit(0);
+	  //System.exit(0);
 	}
     }
   }
@@ -303,7 +342,9 @@ public class Client{
 	  
 	//create an RTPpacket object from the DP
 	RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
-
+	System.out.println(rtp_packet.getsequencenumber());
+	
+	RTPPacketBuffer.add(rtp_packet);
 	//print important header fields of the RTP packet received: 
 	System.out.println("Got RTP packet with SeqNum # "+rtp_packet.getsequencenumber()+" TimeStamp "+rtp_packet.gettimestamp()+" ms, of type "+rtp_packet.getpayloadtype());
 	

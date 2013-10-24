@@ -5,7 +5,7 @@ import java.io.*;
 public class VideoStream {
 
   FileInputStream fis; //video file
-  int frame_nb; //current frame nb
+  //int frame_nb; //current frame nb
 
   //-----------------------------------
   //constructor
@@ -14,7 +14,7 @@ public class VideoStream {
 
     //init variables
     fis = new FileInputStream(filename);
-    frame_nb = 0;
+   // frame_nb = 0;
   }
 
   //-----------------------------------
