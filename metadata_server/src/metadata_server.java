@@ -1,0 +1,197 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.StringTokenizer;
+	
+
+public class metadata_server {
+	//private variables
+	Socket RTSPsocket;
+	static int RTSP_ID = 123456; //ID of the RTSP session
+	int RTSPSeqNb = 0; //Sequence number of RTSP messages within the session
+	static InetAddress ClientIPAddr; //Client IP address
+	static int ClientPortNumber;
+	static BufferedReader RTSPBufferedReader;
+	static BufferedWriter RTSPBufferedWriter;
+	
+	//rtsp states
+	final static int INIT = 0;  //format: INIT portnumber
+									// number of files
+									// n lines of filenames
+	final static int REQUEST = 1; // format: REQUEST filename
+	final static int COMPLETE = 2;// format: COMPLETE filename IPaddress
+	
+	static String VideoFileName; //video file requested from the client
+	
+	final static String CRLF = "\r\n";
+	
+	static Map<String, ArrayList<peer_info>> metadata= new HashMap<String, ArrayList<peer_info>>();
+	
+	
+	public metadata_server() {
+		
+	}
+
+	public static void main(String argv[]) throws Exception
+	{
+		metadata_server theServer = new metadata_server();
+		//get RTSP socket port from the command line
+	    int RTSPport = Integer.parseInt(argv[0]);
+	   
+	    while(true) {
+		    //Initiate TCP connection with the client for the RTSP session
+		    ServerSocket listenSocket = new ServerSocket(RTSPport);
+		    theServer.RTSPsocket = listenSocket.accept();
+		    //listenSocket.close();
+	
+		    //Get Client IP address
+		    theServer.ClientIPAddr = theServer.RTSPsocket.getInetAddress();
+		    
+		    RTSPBufferedReader = new BufferedReader(new InputStreamReader(theServer.RTSPsocket.getInputStream()) );
+		    RTSPBufferedWriter = new BufferedWriter(new OutputStreamWriter(theServer.RTSPsocket.getOutputStream()) );
+	
+		    int request_type;
+		    boolean done = false;
+		    while(!done)
+		    {
+		    	request_type = theServer.parse_RTSP_request(); //blocking
+		    	
+		    	if (request_type == INIT) {
+		    		
+		  	  	}
+		    	else if(request_type == REQUEST ) {
+		    		peer_info selected_peer = select_a_peer();
+		    		theServer.send_RTSP_response_REQUEST(selected_peer);
+		    	}
+		    	else if(request_type == COMPLETE) {
+		    		//decide if you want to send response
+		    		decrement_number_peer();
+		    		done = true;
+		    		listenSocket.close();
+		    	}
+		    }
+	    }
+		
+	}
+	
+	private static void decrement_number_peer() {
+		ArrayList<peer_info> curr_list = metadata.get(VideoFileName);
+		Iterator<peer_info> it = curr_list.iterator();
+		
+		while (it.hasNext()) {
+			peer_info temp = it.next();
+			if (temp.ClientIPAddr == ClientIPAddr)
+				temp.no_of_con_peers--;
+		}
+	}
+	
+	private static peer_info select_a_peer() //havent checked when filename not present
+	{
+		ArrayList<peer_info> curr_list = metadata.get(VideoFileName);
+		peer_info output = curr_list.get(0);
+		if (output != null) {
+			Iterator<peer_info> it = curr_list.iterator();
+			
+			while (it.hasNext()) {
+				peer_info temp = it.next();
+				if (temp.no_of_con_peers < output.no_of_con_peers) 
+					output = temp;
+			}
+		}
+		else{
+			System.out.println("File not present!!!!");
+			//exit(0);
+		}
+		output.no_of_con_peers++;
+		return output;
+		
+	}
+	
+	//------------------------------------
+	  //Parse RTSP Request
+	  //------------------------------------
+	  private int parse_RTSP_request()
+	  {
+	    int request_type = -1;
+	    try{
+	      //parse request line and extract the request_type:
+	      String RequestLine = RTSPBufferedReader.readLine();
+	      //System.out.println("RTSP Server - Received from Client:");
+	      System.out.println(RequestLine);
+
+	      StringTokenizer tokens = new StringTokenizer(RequestLine);
+	      String request_type_string = tokens.nextToken();
+
+	      //convert to request_type structure:
+	      if ((new String(request_type_string)).compareTo("INIT") == 0)
+	    	  	request_type = INIT;
+	      else if ((new String(request_type_string)).compareTo("REQUEST") == 0)
+	    	  	request_type = REQUEST;
+	      else if ((new String(request_type_string)).compareTo("COMPLETE") == 0)
+	    	  	request_type = COMPLETE;
+	     
+	      if(request_type == INIT) {
+	    	  ClientPortNumber = Integer.parseInt(tokens.nextToken());
+	    	  int number_of_files = Integer.parseInt(RTSPBufferedReader.readLine());
+	    	  for(int i = 0; i < number_of_files; i++) {
+	    		  //fill data structure
+	    		  peer_info current = new peer_info();
+	    		  current.ClientIPAddr = ClientIPAddr;
+	    		  current.port_number = ClientPortNumber;
+	    		  current.no_of_con_peers = 0;
+	    		  String video_filename = RTSPBufferedReader.readLine();
+	    		  ArrayList<peer_info> curr_list;
+	    		  if(!metadata.containsKey(video_filename)) {
+	    			  curr_list = new ArrayList<peer_info>();
+	    		  }
+	    		  else {
+	    			  curr_list = metadata.get(video_filename);
+	    		  }
+	    		  curr_list.add(current);
+	    		  metadata.put(video_filename, curr_list);
+	    	  }
+	      }
+	      else if(request_type == COMPLETE) {	      
+	    	  //extract VideoFileName from RequestLine
+	    	  VideoFileName = tokens.nextToken();
+	    	  ClientIPAddr  = InetAddress.getByName(tokens.nextToken());
+	      }
+	      else if(request_type == REQUEST) {
+	    	  VideoFileName = tokens.nextToken();
+	      }
+	    }
+	    catch(Exception ex)
+	      {
+		System.out.println("Exception caught 2: "+ex);
+		System.exit(0);
+	      }
+	    return(request_type);
+	  }
+	  
+	//------------------------------------
+	//Send RTSP Response
+	//------------------------------------
+	  private void send_RTSP_response_REQUEST(peer_info selected) 
+	  {
+	    try{
+	    	RTSPBufferedWriter.write(selected.ClientIPAddr.toString() + CRLF);
+	    	RTSPBufferedWriter.write(Integer.toString(selected.port_number) + CRLF);
+			  RTSPBufferedWriter.flush();
+			  //System.out.println("RTSP Server - Sent response to Client.");
+	    }
+	    catch(Exception ex)
+		  {
+	    	System.out.println("Exception caught 3: "+ex);
+			System.exit(0);
+		     }
+	  }//end of send_RTSP_response
+
+} //end of server
