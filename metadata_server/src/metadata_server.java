@@ -44,7 +44,7 @@ public class metadata_server {
 	{
 		metadata_server theServer = new metadata_server();
 		//get RTSP socket port from the command line
-	    int RTSPport = Integer.parseInt(argv[0]);
+	    int RTSPport = 4003;//Integer.parseInt(argv[0]);//listening port
 	   
 	    while(true) {
 		    //Initiate TCP connection with the client for the RTSP session
@@ -124,21 +124,23 @@ public class metadata_server {
 	    try{
 	      //parse request line and extract the request_type:
 	      String RequestLine = RTSPBufferedReader.readLine();
-	      //System.out.println("RTSP Server - Received from Client:");
+	      System.out.println("RTSP Server - Received from Client:");
 	      System.out.println(RequestLine);
 
 	      StringTokenizer tokens = new StringTokenizer(RequestLine);
 	      String request_type_string = tokens.nextToken();
 
 	      //convert to request_type structure:
-	      if ((new String(request_type_string)).compareTo("INIT") == 0)
+	      if ((new String(request_type_string)).compareTo("INIT") == 0){
 	    	  	request_type = INIT;
+	    	  	System.out.println("inside if loop server");}
 	      else if ((new String(request_type_string)).compareTo("REQUEST") == 0)
 	    	  	request_type = REQUEST;
 	      else if ((new String(request_type_string)).compareTo("COMPLETE") == 0)
 	    	  	request_type = COMPLETE;
 	     
 	      if(request_type == INIT) {
+	    	  System.out.println("in server");
 	    	  ClientPortNumber = Integer.parseInt(tokens.nextToken());
 	    	  int number_of_files = Integer.parseInt(RTSPBufferedReader.readLine());
 	    	  for(int i = 0; i < number_of_files; i++) {
@@ -150,13 +152,16 @@ public class metadata_server {
 	    		  String video_filename = RTSPBufferedReader.readLine();
 	    		  ArrayList<peer_info> curr_list;
 	    		  if(!metadata.containsKey(video_filename)) {
-	    			  curr_list = new ArrayList<peer_info>();
+	    			  curr_list = new ArrayList<peer_info>();//if the video is not present in the main list(metadata) that is maintained, create a new ArrayList
 	    		  }
 	    		  else {
-	    			  curr_list = metadata.get(video_filename);
+	    			  curr_list = metadata.get(video_filename);//if it is already present, get the instance of the ArrayList
 	    		  }
-	    		  curr_list.add(current);
-	    		  metadata.put(video_filename, curr_list);
+	    		  curr_list.add(current); // Add current peer info to the ArrayList
+	    		  System.out.println("inside for server");
+	    		  metadata.put(video_filename, curr_list); // Update metadata
+	    		  System.out.println("put??");
+	    		 
 	    	  }
 	      }
 	      else if(request_type == COMPLETE) {	      
