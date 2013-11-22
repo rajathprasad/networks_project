@@ -215,10 +215,10 @@ public class Peer {
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
 		 }
-		 reqfileName="movie2.Mjpeg";
-		 //String allfiles= "";
-		 System.out.println("client"+fileNames);
-		 //init RTSP state:
+			reqfileName="movie2.Mjpeg";
+			//String allfiles= "";
+			System.out.println("client"+fileNames);
+			//init RTSP state:
 
 		  //System.out.println("Setup Button pressed !");      
 
@@ -226,21 +226,21 @@ public class Peer {
 	    	  //Init non-blocking RTPsocket that will be used to receive data
 	    	 
 	    	  //Send SETUP message to the server
-		   try {
-				clientOutputBuffer.write("REQUEST " + reqfileName+ Constants.CRLF);
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-		    try {
-					clientOutputBuffer.flush();
-		    } catch (IOException e1) {
+			   try {
+					clientOutputBuffer.write("REQUEST " + reqfileName+ Constants.CRLF);
+				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
-	        	}
+				}
+			    try {
+						clientOutputBuffer.flush();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 	    	  //Wait for the response 
-		   //create new thread with server instance
-		    try {
+		        //create new thread with server instance
+			   try {
 				   System.out.println("message from server after request");
 					peerIp = clientInputBuffer.readLine();
 					peerIp= peerIp.substring(1);
