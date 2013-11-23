@@ -128,7 +128,7 @@ public class Peer {
 
 		RTSP_metaserver_port = 3003;//Integer.parseInt(argv[1]);
 		RTSP_listening_port = 4000;
-		String ServerHost = "192.168.1.8";//argv[0];
+		String ServerHost = "143.215.111.239";//argv[0];
 		 try {
 			ServerIPAddr= InetAddress.getByName(ServerHost);
 		} catch (UnknownHostException e2) {
@@ -201,14 +201,36 @@ public class Peer {
 
     	 String peerIp = "";
     	 int peerPort = 0;
-    	 //RTSP_metaserver_port = 3003;//Integer.parseInt(argv[1]);
-//    	 String ServerHost = "192.168.1.8";//argv[0];
-//    	 try {
-//    		 ServerIPAddr= InetAddress.getByName(ServerHost);
-//    	 } catch (UnknownHostException e2) {
-//    		 // TODO Auto-generated catch block
-//    		 e2.printStackTrace();
-//    	 }
+ 		 String ServerHost = "143.215.111.239";//argv[0];
+		 try {
+			ServerIPAddr= InetAddress.getByName(ServerHost);
+		} catch (UnknownHostException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+
+//Establish a TCP connection with the server to exchange RTSP messages
+//------------------
+		try {
+			serverSocket = new Socket(ServerIPAddr, RTSP_metaserver_port);
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		 System.out.println("In client");
+		//Set input and output stream filters:
+		try {
+			clientInputBuffer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()) );
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		try {
+			clientOutputBuffer = new BufferedWriter(new OutputStreamWriter(serverSocket.getOutputStream()) );
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 
 
 		reqfileName=videoname.getText();

@@ -250,7 +250,7 @@ public class Server extends JFrame implements ActionListener, Runnable {
 	imagenb++;
 	       
 	try {
-		if(flag==0){//video or buffer sending the data
+		if(flag==1){//video or buffer sending the data
 			
 		
 	  //get next frame to send from the video, as well as its size
