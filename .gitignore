@@ -1,2 +1,4 @@
 .idea/
 *.iml
+metadata_server/out/
+peer/out
