@@ -254,6 +254,7 @@ public class Peer {
         	   try {
         		System.out.println("message from server after request");
 				peerIp = clientInputBuffer.readLine();
+				System.out.println(peerIp);
 				peerIp= peerIp.substring(1);
 				peerPort = Integer.parseInt(clientInputBuffer.readLine());
 				System.out.println(peerIp);
@@ -268,6 +269,7 @@ public class Peer {
         	Client client = new Client();  
         try {
         	 InetAddress ServerIPAddr = InetAddress.getByName(peerIp);
+        	
              client.start_client(peerPort,ServerIPAddr,reqfileName);
 
         	//	client.start_client(4000,"198.162.1.8","C:\\Users\\Amritha\\Downloads\\movie.Mjpeg");
@@ -276,28 +278,7 @@ public class Peer {
 			e1.printStackTrace();
 		}	
         
-   	 //Establish a TCP connection with the server to exchange RTSP messages
-   	 //------------------
-   	 try {
-   		 serverSocket = new Socket(ServerIPAddr, RTSP_metaserver_port);
-   	 } catch (IOException e2) {
-   		 // 	TODO Auto-generated catch block
-   		 e2.printStackTrace();
-   	 }
-   	 System.out.println("In client");
-   	 //	Set input and output stream filters:
-   	 try {
-			clientInputBuffer = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()) );
-		} catch (IOException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-		try {
-			clientOutputBuffer = new BufferedWriter(new OutputStreamWriter(serverSocket.getOutputStream()) );
-		} catch (IOException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
+
     	}
 
           
