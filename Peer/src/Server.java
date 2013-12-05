@@ -11,6 +11,7 @@ import java.net.*;
 import java.awt.*;
 import java.util.*;
 import java.awt.event.*;
+
 import javax.swing.*;
 import javax.swing.Timer;
 
@@ -34,8 +35,8 @@ public class Server extends JFrame implements ActionListener, Runnable {
   VideoStream video; //VideoStream object used to access video frames
   static int MJPEG_TYPE = 26; //RTP payload type for MJPEG video
   static int FRAME_PERIOD = 100; //Frame period of the video to stream, in ms
-  static int VIDEO_LENGTH = 500; //length of the video in frames
-  static int flag=1;
+  static int VIDEO_LENGTH = 250; //length of the video in frames
+  static int flag=1;//i=video, 0=buffer
 
   static int RTSPport;
   
@@ -67,6 +68,12 @@ public class Server extends JFrame implements ActionListener, Runnable {
   
   final static String CRLF = "\r\n";
 
+  static BufferedReader metaInputBuffer;
+  static BufferedWriter metaOutputBuffer;
+  static Socket serverSocket;
+  InetAddress ServerIPAddr;
+  
+  
   //--------------------------------
   //Constructor
   //--------------------------------
@@ -243,26 +250,29 @@ public class Server extends JFrame implements ActionListener, Runnable {
   //------------------------
   public void actionPerformed(ActionEvent e) {
 	  RTPpacket rtp_packet;
+	  	    
     //if the current image nb is less than the length of the video
-    if (imagenb < VIDEO_LENGTH)
+    if (imagenb < VIDEO_LENGTH && state == PLAYING)
       {
 	//update current imagenb
 	imagenb++;
 	       
 	try {
-		if(flag==1){//video or buffer sending the data
+	if(flag==0 && imagenb<buf.length){//serving from buffer
 			
-		
+	   rtp_packet=RTPPacketBufferServer.get(imagenb);
 	  //get next frame to send from the video, as well as its size
-	  int image_length = video.getnextframe(buf);
-
-	  //Builds an RTPpacket object containing the frame
-	   rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb*FRAME_PERIOD, buf, image_length);
+	  
 		
 		}
 		
-		else{
-			 rtp_packet=RTPPacketBufferServer.get(imagenb);
+	else {//serving from file
+		
+			
+			  int image_length = video.getnextframe(buf);
+
+			  //Builds an RTPpacket object containing the frame
+			  rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb*FRAME_PERIOD, buf, image_length);
 		}
 	  //get to total length of the full rtp packet to send
 	  int packet_length = rtp_packet.getlength();
@@ -285,15 +295,63 @@ public class Server extends JFrame implements ActionListener, Runnable {
 	}
 	catch(Exception ex)
 	  {
-	    System.out.println("Exception caught 1: "+ex);
-	    System.exit(0);
+	  //  System.out.println("Exception caught 1: "+ex);
+	    //System.exit(0);
 	  }
       }
     else
       {
 	//if we have reached the end of the video file, stop the timer
 	timer.stop();
-	imagenb=0;
+	// send complete message to metadata server
+	
+	
+		 String ServerHost = "192.168.1.12";//argv[0];
+		 try {
+			ServerIPAddr= InetAddress.getByName(ServerHost);
+		} catch (UnknownHostException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+
+//Establish a TCP connection with the server to exchange RTSP messages
+//------------------
+		try {
+			serverSocket = new Socket(ServerIPAddr, 3003);
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		 System.out.println("In complete");
+		//Set input and output stream filters:
+		
+		try {
+			metaOutputBuffer = new BufferedWriter(new OutputStreamWriter(serverSocket.getOutputStream()) );
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+
+
+		//System.out.println("client"+fileNames);
+
+       	   try {
+				metaOutputBuffer.write("COMPLETE " + VideoFileName +  Constants.CRLF);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+       	    try {
+					metaOutputBuffer.flush();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+       	    System.out.println("Sent Complete message to metadataserver");
+	
+	
+	
+       	    imagenb=0;
       }
   }
 
@@ -351,7 +409,7 @@ public class Server extends JFrame implements ActionListener, Runnable {
     }
     catch(Exception ex)
       {
-	System.out.println("Exception caught 2: "+ex);
+	//System.out.println("Exception caught 2: "+ex);
 	//System.exit(0);
       }
     return(request_type);

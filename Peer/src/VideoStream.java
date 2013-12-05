@@ -14,6 +14,7 @@ public class VideoStream {
 
     //init variables
     fis = new FileInputStream(filename);
+  
     frame_nb = 0;
   }
 
